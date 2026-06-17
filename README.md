@@ -138,16 +138,119 @@ The sketch auto-detects the GPS module's baud rate at boot by trying common rate
 
 ---
 
-## CAN Frame Reference
+## CAN ID Reference
 
-For reference, the GPS variant transmits the following gateway-originated frames to the cluster (only while ignition is on):
+Byte-level structure of every CAN ID the gateway reads from or writes to. All other traffic passes through unmodified in both directions.
 
-| CAN ID | Length | Purpose | Rate |
+### `0x170` — Sport / Manual Mode Status
+Direction: Vehicle → Cluster (read + forwarded, byte 2 conditionally patched) | Length: 8 | Also used as ignition-present signal (GPS variant)
+
+| Byte | Field |
+|---|---|
+| 0 | unused |
+| 1 | Mode flag — `0xFB` = sport/manual active |
+| 2 | Gear character — `0x53`/`'S'` rewritten to `0x44`/`'D'`; `0x31`–`0x38`/`'1'`–`'8'` = manual gear 1–8 |
+| 3–7 | unused |
+
+### `0x330` — Sport Mode Display
+Direction: Vehicle → Cluster (forwarded, byte 7 conditionally patched) | Length: 8
+
+| Byte | Field |
+|---|---|
+| 0–6 | unused |
+| 7 | Sport mode flag — set to `0x04` when sport mode active |
+
+### `0x144` — Manual Mode Display
+Direction: Vehicle → Cluster (forwarded, byte 7 conditionally patched) | Length: 8
+
+| Byte | Field |
+|---|---|
+| 0–6 | unused |
+| 7 | Manual mode flag — set to `0x80` when manual mode active |
+
+### `0x3E8` — Shifter Type
+Direction: Vehicle → Cluster (forwarded, byte 5 patched) | Length: ≥6
+
+| Byte | Field |
+|---|---|
+| 0–4 | unused |
+| 5 | Shifter type — forced to `0x9E` (MS7S) |
+
+### `0x3F3` — Gear Display Enable
+Direction: Vehicle → Cluster (forwarded, bytes 0–1 patched) | Length: ≥2
+
+| Byte | Field |
+|---|---|
+| 0 | Forced to `0x81` |
+| 1 | Forced to `0x02` |
+
+### `0x318` — Steering Wheel Directional Pad
+Direction: Vehicle, read only (not forwarded directly — re-encoded into `0x22D`) | Length: ≥5
+
+| Byte | Field |
+|---|---|
+| 0–3 | unused |
+| 4 | Direction — `0x01` LEFT, `0x04` DOWN, `0x10` UP, `0x40` RIGHT, else released |
+
+### `0x23A` — Steering Wheel OK Button
+Direction: Vehicle, read only (not forwarded directly — re-encoded into `0x22D`) | Length: ≥1
+
+| Byte | Field |
+|---|---|
+| 0 | Button state — `0x80` = OK held, else released |
+
+### `0x350` — Time Frame
+Direction: Vehicle → blocked (GPS variant) / Gateway → Cluster | Length: 8 | Rate: 1 Hz | GPS variant only, gated on ignition
+
+| Byte | Field |
+|---|---|
+| 0 | Seconds (0–59) |
+| 1 | Minutes (0–59) |
+| 2 | Hours (0–23) |
+| 3 | Year — high byte |
+| 4 | Year — low byte |
+| 5 | Month (1–12) |
+| 6 | Day (1–31) |
+| 7 | Bus identifier — always `0x39` |
+
+The vehicle's own `0x350` is intercepted and dropped before reaching the cluster; the gateway transmits its own as shown above.
+
+### `0x358` — Compass Heading Frame
+Direction: Vehicle → blocked (GPS variant) / Gateway → Cluster | Length: 8 | Rate: 2 Hz | GPS variant only, gated on ignition
+
+| Byte | Field |
+|---|---|
+| 0 | Heading octet (see table below) or `0x0F` if offline |
+| 1–7 | unused (`0x00`) |
+
+| Octet | Direction | Octet | Direction |
 |---|---|---|---|
-| `0x350` | 8 | Time (seconds, minutes, hours, year, month, day, bus ID `0x39`) | 1 Hz |
-| `0x358` | 8 | Compass heading octet in byte 0 (`0x00`–`0x07`, or `0x0F` = offline) | 2 Hz |
+| `0x00` | N | `0x04` | S |
+| `0x01` | NE | `0x05` | SW |
+| `0x02` | E | `0x06` | W |
+| `0x03` | SE | `0x07` | NW |
+| `0x0F` | OFFLINE | | |
 
-The corresponding frames originating from the vehicle bus on these same IDs are intentionally blocked from reaching the cluster, since the gateway supplies its own.
+The vehicle's own `0x358` is intercepted and dropped before reaching the cluster; the gateway transmits its own as shown above.
+
+### `0x314` — Unit Settings
+Direction: Gateway → Cluster | Length: 3 | Rate: once per setting, at boot/wake
+
+| Byte | Field |
+|---|---|
+| 0 | Setting ID — `0x60` pressure, `0x61` speed, `0x62` range, `0x63` fuel consumption, `0x65` temperature |
+| 1 | Always `0x03` |
+| 2 | Configured value for that setting |
+
+### `0x22D` — Steering Wheel Buttons (re-encoded)
+Direction: Gateway → Cluster | Length: 8 | Rate: on state change only
+
+| Byte | Field |
+|---|---|
+| 0–3 | `0x00` |
+| 4 | `0x10` = LEFT held, `0x40` = DOWN held |
+| 5 | `0x04` = UP held, `0x01` = RIGHT held, `0x10` = OK held |
+| 6–7 | `0x00` |
 
 ---
 
