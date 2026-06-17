@@ -172,7 +172,7 @@ static volatile uint8_t prev23AByte0 = 0xFF;
 // CONFIG
 // ==================================================================================================================================
 
-const uint32_t SLEEP_TIMEOUT_MS   = 5000;
+const uint32_t SLEEP_TIMEOUT_MS   = 20000;
 const uint32_t RECOVERY_PERIOD_MS = 1000;
 
 // STARTUP_GRACE_MS must be longer than SLEEP_TIMEOUT_MS.
@@ -182,7 +182,7 @@ const uint32_t RECOVERY_PERIOD_MS = 1000;
 // CAN frames have arrived to reset them, causing an immediate
 // re-entry into deepSleep. 10 s gives the bus ample time to
 // become fully active before the standby timeout can fire.
-const uint32_t STARTUP_GRACE_MS   = 10000;
+const uint32_t STARTUP_GRACE_MS   = 40000;
 
 // ==================================================================================================================================
 // CAN STATISTICS
