@@ -174,7 +174,7 @@ Direction: Vehicle → Cluster (forwarded, byte 5 patched) | Length: ≥6
 | Byte | Field |
 |---|---|
 | 0–4 | unused |
-| 5 | Shifter type — forced to `0x9E` (MS7S) |
+| 5 | Shifter type — forced to `0x9E` (PS5) |
 
 ### `0x3F3` — Gear Display Enable
 Direction: Vehicle → Cluster (forwarded, bytes 0–1 patched) | Length: ≥2
